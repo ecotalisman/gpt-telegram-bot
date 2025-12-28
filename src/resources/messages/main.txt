@@ -1,6 +1,6 @@
-👋 Hi! I’m your Telegram + ChatGPT bot 🤖
+👋<b>Hi!</b> I’m your Telegram + ChatGPT bot 🤖
 
-*Commands:*
+<b>Commands:</b>
 /start — menu 🧭
 /random — random fact 🎲
 /gpt — ask ChatGPT 💬
