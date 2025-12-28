@@ -1,0 +1,8 @@
+👋 Hi! I’m your Telegram + ChatGPT bot 🤖
+
+*Commands:*
+/start — menu 🧭
+/random — random fact 🎲
+/gpt — ask ChatGPT 💬
+/talk — talk to a persona 🎭
+/quiz — quiz 🧠
