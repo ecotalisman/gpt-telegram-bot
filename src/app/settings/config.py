@@ -45,7 +45,3 @@ if not settings.tg_bot_api_key:
 
 if not settings.openai_api_key:
     raise RuntimeError("OPENAI_API_KEY is missing in .env")
-
-print("CWD:", Path.cwd())
-print("__file__:", Path(__file__).resolve())
-print("root:", Path(__file__).resolve().parents[3])

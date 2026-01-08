@@ -11,7 +11,7 @@ from telegram.ext import (
 
 import html
 
-from app.settings.config import TG_BOT_API_KEY
+from app.settings.config import settings
 from app.utils import load_messages
 
 
@@ -135,7 +135,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def run():
-    app = ApplicationBuilder().token(TG_BOT_API_KEY).build()
+    app = ApplicationBuilder().token(settings.tg_bot_api_key).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("gpt", set_gpt_mode))
     app.add_handler(CommandHandler("random", set_random_mode))

@@ -1,12 +1,12 @@
 import asyncio
 import os
 from openai import AsyncOpenAI, OpenAIError
-from app.settings.config import OPENAI_API_KEY
+from app.settings.config import settings
 
 
 class OpenAIClient:
     def __init__(self):
-        self._client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+        self._client = AsyncOpenAI(api_key=settings.openai_api_key)
 
     async def ask(self, user_message: str, system_prompt: str = "You are a helpful assistant.") -> str:
         try:
