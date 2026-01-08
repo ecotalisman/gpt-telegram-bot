@@ -1,7 +1,7 @@
 import asyncio
 import os
 from openai import AsyncOpenAI, OpenAIError
-from config import OPENAI_API_KEY
+from app.settings.config import OPENAI_API_KEY
 
 
 class OpenAIClient:

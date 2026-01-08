@@ -1,4 +1,4 @@
-from config import PATH_TO_MESSAGES
+from app.settings.config import PATH_TO_MESSAGES
 
 
 def load_messages(name: str) -> str:

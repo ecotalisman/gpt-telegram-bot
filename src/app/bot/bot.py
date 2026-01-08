@@ -11,8 +11,8 @@ from telegram.ext import (
 
 import html
 
-from config import TG_BOT_API_KEY
-from utils import load_messages
+from app.settings.config import TG_BOT_API_KEY
+from app.utils import load_messages
 
 
 MODE_GPT = "gpt"
