@@ -1,4 +1,5 @@
 import argparse
+from tabulate import tabulate
 from openai import OpenAI, OpenAIError
 from app.settings.config import settings
 
@@ -104,14 +105,18 @@ def create_client() -> OpenAI:
 
 
 def handle_list(client: OpenAI, limit: int) -> None:
-    """List assistants with a configurable limit"""
+    """List assistants with a configurable limit (pretty table)"""
     try:
         assistants = client.beta.assistants.list(limit=limit)
     except OpenAIError as exc:
         raise SystemExit(f"Failed to list assistants: {exc}") from exc
 
-    for assistant in assistants.data:
-        print(f"{assistant.id} | {assistant.name or '-'}")
+    if not assistants.data:
+        print("No assistants found")
+        return
+
+    rows = [(a.id, a.name or "-", a.model) for a in assistants.data]
+    print(tabulate(rows, headers=["ID", "Name", "Model"], tablefmt="github"))
 
 
 def handle_show(client: OpenAI, assistant_id: str, show_instructions: bool) -> None:
