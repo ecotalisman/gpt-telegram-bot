@@ -41,7 +41,7 @@ def talk_chat_keyboard() -> ReplyKeyboardMarkup:
 
 
 def quiz_topic_keyboard() -> ReplyKeyboardMarkup:
-    rows = [[QUIZZ_TOPICS[0], QUIZZ_TOPICS[1], QUIZZ_TOPICS[2], QUIZZ_TOPICS[3]], [BUTTON_FINISH]]
+    rows = [QUIZZ_TOPICS, [BUTTON_FINISH]]
     return ReplyKeyboardMarkup(rows, resize_keyboard=True)
 
 

@@ -1,5 +1,4 @@
 from telegram import Update
-from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from app.bot.message_sender import send_html_message
@@ -19,6 +18,8 @@ async def route_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     Route non-command text message depending on current user mode
     """
     user_text = update.message.text.strip()
+    if not user_text:
+        return
     mode = context.user_data.get("mode", MODE_GPT)
 
     if mode == MODE_GPT:
