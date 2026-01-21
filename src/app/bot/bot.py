@@ -9,9 +9,16 @@ from app.settings.config import settings
 from app.bot import commands
 from app.bot.handlers.message_router import route_text
 
+from app.db.repository import GptThreadRepository
+from app.services.openai_client import OpenAIClient
+
 
 def run():
     app = ApplicationBuilder().token(settings.tg_bot_api_key).build()
+
+    app.bot_data["openai_client"] = OpenAIClient()
+    app.bot_data["thread_repository"] = GptThreadRepository()
+
     app.add_handler(CommandHandler("start", commands.start))
     app.add_handler(CommandHandler("gpt", commands.set_gpt_mode))
     app.add_handler(CommandHandler("random", commands.set_random_mode))

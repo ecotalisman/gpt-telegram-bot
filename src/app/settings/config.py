@@ -8,6 +8,7 @@ from dataclasses import dataclass
 class Settings:
     openai_api_key: str
     tg_bot_api_key: str
+    openai_model: str
 
     # Assistant IDs (from .env)
     assistant_random_facts_id: str
@@ -43,6 +44,7 @@ prompts_dir = resources_dir / "prompts"
 settings = Settings(
     openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
     tg_bot_api_key=os.getenv("TG_BOT_API_KEY", "").strip(),
+    openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip(),
 
     assistant_random_facts_id=os.getenv("AI_ASSISTANT_RANDOM_FACTS_ID", "").strip(),
     assistant_fact_spark_id=os.getenv("AI_ASSISTANT_FACT_SPARK_ID", "").strip(),

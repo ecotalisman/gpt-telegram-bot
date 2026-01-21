@@ -14,20 +14,15 @@ MODE_TALK = "talk"
 
 
 async def route_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """
-    Route non-command text message depending on current user mode
-    """
-    user_text = update.message.text.strip()
-    if not user_text:
-        return
+    user_text = (update.effective_message.text or "").strip()
     mode = context.user_data.get("mode", MODE_GPT)
+
+    if mode == MODE_RANDOM:
+        await handle_random_message(update, context, user_text)
+        return
 
     if mode == MODE_GPT:
         await handle_gpt_message(update, context, user_text)
-        return
-
-    if mode == MODE_RANDOM:
-        await handle_random_message(update, context)
         return
 
     if mode == MODE_QUIZ:
@@ -39,8 +34,4 @@ async def route_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
 
     context.user_data["mode"] = MODE_GPT
-    await send_html_message(
-        update,
-        context,
-        "⚠️ Unknown mode. Switching to <b>GPT mode</b>.",
-    )
+    await send_html_message(update, context, "⚠️ Unknown mode. Switching to <b>GPT mode</b>.")

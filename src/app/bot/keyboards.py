@@ -1,4 +1,4 @@
-from telegram import ReplyKeyboardMarkup
+from telegram import ReplyKeyboardMarkup, KeyboardButton
 
 BUTTON_FINISH = "Finish"
 BUTTON_ANOTHER_FACT = "I want another fact"
@@ -16,28 +16,24 @@ TALK_PERSONAS = {
 def main_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         [
-            ["/gpt", "/random", "/quiz", "/talk"],
-            ["/start", "/reset"],
+            [KeyboardButton("/gpt"), KeyboardButton("/random"), KeyboardButton("/quiz"), KeyboardButton("/talk")],
+            [KeyboardButton("/start"), KeyboardButton("/reset")],
         ],
         resize_keyboard=True,
     )
 
 
-def random_keyboard() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        [[BUTTON_ANOTHER_FACT, BUTTON_FINISH]],
-        resize_keyboard=True,
-    )
-
-
 def talk_persona_keyboard() -> ReplyKeyboardMarkup:
-    rows = [[name] for name in TALK_PERSONAS.keys()]
-    rows.append([BUTTON_FINISH])
+    names = list(TALK_PERSONAS.keys())
+    rows = []
+    for i in range(0, len(names), 2):
+        rows.append([KeyboardButton(n) for n in names[i:i + 2]])
+    rows.append([KeyboardButton(BUTTON_FINISH)])
     return ReplyKeyboardMarkup(rows, resize_keyboard=True)
 
 
 def talk_chat_keyboard() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup([[BUTTON_FINISH]], resize_keyboard=True)
+    return ReplyKeyboardMarkup([[KeyboardButton(BUTTON_FINISH)]], resize_keyboard=True)
 
 
 def quiz_topic_keyboard() -> ReplyKeyboardMarkup:
@@ -47,6 +43,9 @@ def quiz_topic_keyboard() -> ReplyKeyboardMarkup:
 
 def quiz_action_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        [[BUTTON_ANOTHER_QUESTION, BUTTON_CHANGE_TOPIC], [BUTTON_FINISH]],
+        [
+            [KeyboardButton(BUTTON_ANOTHER_QUESTION), KeyboardButton(BUTTON_CHANGE_TOPIC)],
+            [KeyboardButton(BUTTON_FINISH)],
+        ],
         resize_keyboard=True,
     )
