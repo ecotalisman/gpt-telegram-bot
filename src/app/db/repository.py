@@ -1,27 +1,34 @@
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Optional, Tuple
 
 import aiosqlite
 
-from app.db.database import get_db_path
+from src.app.db.database import get_db_path
+
+logger = logging.getLogger(__name__)
 
 
 class GptThreadRepository:
     """Repository for conversation sessions + local message history (SQLite)."""
 
     async def get_session(self, tg_user_id: int, mode: str) -> Optional[Tuple[str, Optional[str]]]:
-        """
-        Returns (conversation_id, last_response_id) or None
-        """
-        async with aiosqlite.connect(get_db_path()) as db:
-            cur = await db.execute(
-                "SELECT conversation_id, last_response_id FROM user_threads WHERE tg_user_id=? AND mode=?;",
-                (tg_user_id, mode),
-            )
-            row = await cur.fetchone()
-            return (row[0], row[1]) if row else None
+        """Returns (conversation_id, last_response_id) or None"""
+        try:
+            async with aiosqlite.connect(get_db_path()) as db:
+                cur = await db.execute(
+                    "SELECT conversation_id, last_response_id FROM user_threads WHERE tg_user_id=? AND mode=?;",
+                    (tg_user_id, mode),
+                )
+                row = await cur.fetchone()
+                if row:
+                    logger.debug(f"Session found for user {tg_user_id}, mode {mode}")
+                return (row[0], row[1]) if row else None
+        except aiosqlite.Error as e:
+            logger.error(f"Error getting session for user {tg_user_id}: {e}")
+            return None
 
     async def get_or_create_session(self, tg_user_id: int, mode: str) -> Tuple[str, Optional[str]]:
         session = await self.get_session(tg_user_id, mode)
@@ -64,15 +71,22 @@ class GptThreadRepository:
             await db.commit()
 
     async def add_message(self, conversation_id: str, role: str, content: str) -> None:
-        async with aiosqlite.connect(get_db_path()) as db:
-            await db.execute(
-                """
-                INSERT INTO thread_messages (conversation_id, role, content)
-                VALUES (?, ?, ?);
-                """,
-                (conversation_id, role, content),
-            )
-            await db.commit()
+        logger.info("Saving message: conv_id=%s, role=%s, content_len=%s chars", conversation_id, role, len(content))
+        db_path = get_db_path()
+        try:
+            async with aiosqlite.connect(db_path) as db:
+                await db.execute(
+                    """
+                    INSERT INTO thread_messages (conversation_id, role, content)
+                    VALUES (?, ?, ?);
+                    """,
+                    (conversation_id, role, content),
+                )
+                await db.commit()
+            logger.info("Message saved successfully to %s", db_path)
+        except aiosqlite.Error as e:
+            logger.error("Failed to save message: %s", e)
+            raise
 
     async def reset_mode(self, tg_user_id: int, mode: str) -> None:
         session = await self.get_session(tg_user_id, mode)
@@ -86,13 +100,21 @@ class GptThreadRepository:
             await db.commit()
 
     async def reset_user(self, tg_user_id: int) -> None:
-        async with aiosqlite.connect(get_db_path()) as db:
-            # get all conversation_ids
-            cur = await db.execute("SELECT conversation_id FROM user_threads WHERE tg_user_id=?;", (tg_user_id,))
-            rows = await cur.fetchall()
-            conv_ids = [r[0] for r in rows]
+        try:
+            async with aiosqlite.connect(get_db_path()) as db:
+                cur = await db.execute("SELECT conversation_id FROM user_threads WHERE tg_user_id=?;", (tg_user_id,))
+                rows = await cur.fetchall()
+                conv_ids = [r[0] for r in rows]
 
-            await db.execute("DELETE FROM user_threads WHERE tg_user_id=?;", (tg_user_id,))
-            for cid in conv_ids:
-                await db.execute("DELETE FROM thread_messages WHERE conversation_id=?;", (cid,))
-            await db.commit()
+                await db.execute("DELETE FROM user_threads WHERE tg_user_id=?;", (tg_user_id,))
+
+                if conv_ids:
+                    placeholders = ",".join("?" * len(conv_ids))
+                    await db.execute(f"DELETE FROM thread_messages WHERE conversation_id IN ({placeholders});",
+                                     conv_ids)
+
+                await db.commit()
+                logger.info(f"User {tg_user_id} data reset: {len(conv_ids)} conversations deleted")
+        except aiosqlite.Error as e:
+            logger.error(f"Error resetting user {tg_user_id}: {e}")
+            raise

@@ -1,4 +1,4 @@
-from app.settings.config import settings
+from src.app.settings.config import settings
 
 
 def load_messages(name: str) -> str:

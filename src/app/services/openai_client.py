@@ -1,8 +1,14 @@
 from __future__ import annotations
+
+import logging
+import asyncio
 from dataclasses import dataclass
 from typing import Optional
-from openai import AsyncOpenAI, OpenAIError
-from app.settings.config import settings
+
+from openai import AsyncOpenAI, OpenAIError, RateLimitError, APIStatusError
+from src.app.settings.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -42,23 +48,45 @@ class OpenAIClient:
         Returns:
             AskResult(text=..., response_id=...)
         """
-        try:
-            response = await self._client.responses.create(
-                model=model,
-                input=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message},
-                ],
-                previous_response_id=previous_response_id,
-            )
+        MAX_RETRIES = 3
+        RETRY_DELAY = 1.0
 
-            # SDK provides a helper that concatenates text output
-            text = (getattr(response, "output_text", "") or "").strip()
-            if not text:
-                text = "⚠️ No assistant text returned"
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                logger.debug(f"OpenAI request attempt {attempt}/{MAX_RETRIES}")
 
-            return AskResult(text=text, response_id=response.id)
+                response = await self._client.responses.create(
+                    model=model,
+                    input=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_message},
+                    ],
+                    previous_response_id=previous_response_id,
+                )
 
-        except OpenAIError:
-            # Re-raise so caller can handle (show error in Telegram, retry, log, etc.)
-            raise
+                text = (getattr(response, "output_text", "") or "").strip()
+                if not text:
+                    text = "⚠️ No assistant text returned"
+
+                logger.info(f"OpenAI response received: {len(text)} chars")
+                return AskResult(text=text, response_id=response.id)
+
+            except RateLimitError as e:
+                logger.warning(f"Rate limit hit, attempt {attempt}/{MAX_RETRIES}: {e}")
+                if attempt == MAX_RETRIES:
+                    raise
+                await asyncio.sleep(RETRY_DELAY * attempt)
+
+            except APIStatusError as e:
+                if e.status_code >= 500:
+                    logger.warning(f"Server error, attempt {attempt}/{MAX_RETRIES}: {e}")
+                    if attempt == MAX_RETRIES:
+                        raise
+                    await asyncio.sleep(RETRY_DELAY * attempt)
+                else:
+                    logger.error(f"OpenAI API error: {e}")
+                    raise
+
+            except OpenAIError as e:
+                logger.error(f"OpenAI error: {e}")
+                raise

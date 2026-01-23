@@ -1,7 +1,7 @@
 import argparse
 from tabulate import tabulate
 from openai import OpenAI, OpenAIError
-from app.settings.config import settings
+from src.app.settings.config import settings
 
 CLI_VERSION = "0.1.0"
 

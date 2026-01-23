@@ -1,65 +1,84 @@
+import logging
 from pathlib import Path
-import os
-from dotenv import load_dotenv
-from dataclasses import dataclass
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator, computed_field
 
-
-@dataclass(frozen=True)
-class Settings:
-    openai_api_key: str
-    tg_bot_api_key: str
-    openai_model: str
-
-    # Assistant IDs (from .env)
-    assistant_random_facts_id: str
-    assistant_fact_spark_id: str
-    assistant_talk_id: str
-    assistant_quiz_master_id: str
-
-    # Project paths
-    project_root: Path
-    resources_dir: Path
-    messages_dir: Path
-    prompts_dir: Path
+logger = logging.getLogger(__name__)
 
 
 def _get_project_root() -> Path:
-    # file: src/app/settings/config.py
-    # parents: settings -> app -> src -> project_root
+    """Get project root directory (3 levels up from this file)"""
     return Path(__file__).resolve().parents[3]
 
 
-def _load_env(project_root: Path) -> None:
-    env_path = project_root / ".env"
-    load_dotenv(env_path)
+PROJECT_ROOT = _get_project_root()
+ENV_FILE_PATH = PROJECT_ROOT / ".env"
 
 
-project_root = _get_project_root()
-_load_env(project_root)
+class Settings(BaseSettings):
+    """Application settings with automatic validation from .env file"""
 
-resources_dir = project_root / "src" / "resources"
-messages_dir = resources_dir / "messages"
-prompts_dir = resources_dir / "prompts"
+    # Required API keys
+    openai_api_key: str = Field(..., description="OpenAI API key")
+    tg_bot_api_key: str = Field(..., description="Telegram Bot API key")
 
-settings = Settings(
-    openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
-    tg_bot_api_key=os.getenv("TG_BOT_API_KEY", "").strip(),
-    openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip(),
+    # Optional settings with defaults
+    openai_model: str = Field(default="gpt-4o-mini", description="OpenAI model name")
 
-    assistant_random_facts_id=os.getenv("AI_ASSISTANT_RANDOM_FACTS_ID", "").strip(),
-    assistant_fact_spark_id=os.getenv("AI_ASSISTANT_FACT_SPARK_ID", "").strip(),
-    assistant_talk_id=os.getenv("AI_ASSISTANT_TALK_ID", "").strip(),
-    assistant_quiz_master_id=os.getenv("AI_ASSISTANT_QUIZ_MASTER_ID", "").strip(),
+    # OpenAI Assistant IDs (optional) - use validation_alias to map from .env names
+    assistant_random_facts_id: str = Field(default="", validation_alias="AI_ASSISTANT_RANDOM_FACTS_ID")
+    assistant_fact_spark_id: str = Field(default="", validation_alias="AI_ASSISTANT_FACT_SPARK_ID")
+    assistant_talk_id: str = Field(default="", validation_alias="AI_ASSISTANT_TALK_ID")
+    assistant_quiz_master_id: str = Field(default="", validation_alias="AI_ASSISTANT_QUIZ_MASTER_ID")
 
-    project_root=project_root,
-    resources_dir=resources_dir,
-    messages_dir=messages_dir,
-    prompts_dir=prompts_dir,
-)
+    @field_validator("openai_api_key", "tg_bot_api_key")
+    @classmethod
+    def validate_required(cls, v: str, info) -> str:
+        """
+        Validate that required API keys are not empty or whitespace-only.
+
+        Args:
+            v: The value to validate
+            info: Field information (contains field_name)
+
+        Returns:
+            Stripped value if valid
+
+        Raises:
+            ValueError: If the value is empty or whitespace-only
+        """
+        if not v or not v.strip():
+            raise ValueError(f"{info.field_name} is required and cannot be empty")
+        return v.strip()
+
+    model_config = SettingsConfigDict(
+        env_file=str(ENV_FILE_PATH),
+        env_file_encoding="utf-8",
+        frozen=True,
+        extra="ignore",
+        populate_by_name=True,
+    )
+
+    @computed_field
+    @property
+    def project_root(self) -> Path:
+        return _get_project_root()
+
+    @computed_field
+    @property
+    def resources_dir(self) -> Path:
+        return self.project_root / "src" / "resources"
+
+    @computed_field
+    @property
+    def messages_dir(self) -> Path:
+        return self.resources_dir / "messages"
+
+    @computed_field
+    @property
+    def prompts_dir(self) -> Path:
+        return self.resources_dir / "prompts"
 
 
-if not settings.tg_bot_api_key:
-    raise RuntimeError("TG_BOT_API_KEY is missing in .env")
-
-if not settings.openai_api_key:
-    raise RuntimeError("OPENAI_API_KEY is missing in .env")
+# Create settings instance (pydantic automatically loads from .env)
+settings = Settings()
