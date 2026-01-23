@@ -6,10 +6,11 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from src.app.bot.keyboards import main_keyboard, quiz_topic_keyboard, talk_persona_keyboard
-from src.app.bot.message_sender import send_html_message
+from src.app.bot.message_sender import send_html_message, send_photo
 from src.app.bot.resource_loader import load_message
 from src.app.db.enums import SessionMode
 from src.app.db.repository import GptThreadRepository
+from src.app.settings.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +34,12 @@ async def set_gpt_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     logger.info("User %s executed /gpt", uid)
 
     context.user_data["mode"] = SessionMode.GPT.value
-    await send_html_message(
+    image_path = settings.images_dir / "gpt.png"
+    await send_photo(
         update,
         context,
-        "✅ <b>GPT mode</b> enabled.\nWrite your question:",
+        image_path,
+        caption="✅ <b>GPT mode</b> enabled.\nWrite your question:",
         reply_markup=main_keyboard(),
     )
 
@@ -46,10 +49,12 @@ async def set_random_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     logger.info("User %s executed /random", uid)
 
     context.user_data["mode"] = SessionMode.RANDOM.value
-    await send_html_message(
+    image_path = settings.images_dir / "random.png"
+    await send_photo(
         update,
         context,
-        "✅ <b>Random facts mode</b> enabled.\nSend any text (optional topic).",
+        image_path,
+        caption="✅ <b>Random facts mode</b> enabled.\nSend any text (optional topic).",
         reply_markup=main_keyboard(),
     )
 
@@ -61,10 +66,12 @@ async def set_quiz_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     context.user_data["mode"] = SessionMode.QUIZ.value
     context.user_data["quiz_state"] = "choose_topic"
 
-    await send_html_message(
+    image_path = settings.images_dir / "quiz.png"
+    await send_photo(
         update,
         context,
-        "🧠 <b>Quiz mode</b>\nChoose a topic:",
+        image_path,
+        caption="🧠 <b>Quiz mode</b>\nChoose a topic:",
         reply_markup=quiz_topic_keyboard(),
     )
 
@@ -76,10 +83,12 @@ async def set_talk_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     context.user_data["mode"] = SessionMode.TALK.value
     context.user_data.pop("persona_name", None)
 
-    await send_html_message(
+    image_path = settings.images_dir / "talk.png"
+    await send_photo(
         update,
         context,
-        "🎭 <b>Talk mode</b> enabled.\nChoose a persona:",
+        image_path,
+        caption="🎭 <b>Talk mode</b> enabled.\nChoose a persona:",
         reply_markup=talk_persona_keyboard(),
     )
 

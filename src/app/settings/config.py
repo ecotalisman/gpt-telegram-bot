@@ -79,6 +79,11 @@ class Settings(BaseSettings):
     def prompts_dir(self) -> Path:
         return self.resources_dir / "prompts"
 
+    @computed_field
+    @property
+    def images_dir(self) -> Path:
+        return self.resources_dir / "images"
+
 
 # Create settings instance (pydantic automatically loads from .env)
 settings = Settings()

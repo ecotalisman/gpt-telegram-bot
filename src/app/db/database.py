@@ -15,7 +15,9 @@ def get_db_path() -> Path:
     storage_dir = settings.project_root / "storage"
     storage_dir.mkdir(parents=True, exist_ok=True)
 
-    return storage_dir / "bot.db"
+    db_path = storage_dir / "bot.db"
+    logger.debug("DB path resolved: %s (exists=%s)", db_path, db_path.exists())
+    return db_path
 
 
 async def init_db() -> None:
@@ -30,7 +32,12 @@ async def init_db() -> None:
     - thread_messages: local history copy linked by conversation_id
     """
     db_path = get_db_path()
-    logger.info(f"Initializing database at {db_path}")
+    logger.info("=" * 60)
+    logger.info("DATABASE INIT")
+    logger.info("  Path: %s", db_path)
+    logger.info("  Absolute: %s", db_path.resolve())
+    logger.info("  Exists before init: %s", db_path.exists())
+    logger.info("=" * 60)
 
     try:
         async with aiosqlite.connect(db_path) as db:
@@ -77,7 +84,7 @@ async def init_db() -> None:
                 """
             )
             await db.commit()
-        logger.info("Database initialized successfully")
+        logger.info("Database initialized successfully at %s", db_path.resolve())
     except aiosqlite.Error as e:
-        logger.error(f"Database initialization failed: {e}")
+        logger.error("Database initialization failed at %s: %s", db_path.resolve(), e)
         raise

@@ -31,11 +31,14 @@ class GptThreadRepository:
             return None
 
     async def get_or_create_session(self, tg_user_id: int, mode: str) -> Tuple[str, Optional[str]]:
+        logger.info("get_or_create_session called: user=%s, mode=%s, db_path=%s", tg_user_id, mode, get_db_path())
         session = await self.get_session(tg_user_id, mode)
         if session:
+            logger.info("Existing session found: conv_id=%s, last_resp_id=%s", session[0], session[1])
             return session
 
         conversation_id = f"conv_{uuid.uuid4().hex}"
+        logger.info("Creating NEW session: user=%s, mode=%s, conv_id=%s", tg_user_id, mode, conversation_id)
         await self.upsert_session(tg_user_id, mode, conversation_id, last_response_id=None)
         return conversation_id, None
 
