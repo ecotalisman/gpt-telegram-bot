@@ -49,7 +49,9 @@ class GptThreadRepository:
         conversation_id: str,
         last_response_id: Optional[str],
     ) -> None:
-        async with aiosqlite.connect(get_db_path()) as db:
+        db_path = get_db_path()
+        logger.info("[DB] upsert_session: user=%s, mode=%s, conv=%s, path=%s", tg_user_id, mode, conversation_id, db_path.resolve())
+        async with aiosqlite.connect(db_path) as db:
             await db.execute(
                 """
                 INSERT INTO user_threads (tg_user_id, mode, conversation_id, last_response_id)
@@ -60,6 +62,7 @@ class GptThreadRepository:
                 (tg_user_id, mode, conversation_id, last_response_id),
             )
             await db.commit()
+            logger.info("[DB] upsert_session committed: user=%s, mode=%s", tg_user_id, mode)
 
     async def set_last_response_id(self, tg_user_id: int, mode: str, last_response_id: Optional[str]) -> None:
         async with aiosqlite.connect(get_db_path()) as db:
@@ -73,12 +76,13 @@ class GptThreadRepository:
             )
             await db.commit()
 
-    async def add_message(self, conversation_id: str, role: str, content: str) -> None:
-        logger.info("Saving message: conv_id=%s, role=%s, content_len=%s chars", conversation_id, role, len(content))
+    async def add_message(self, conversation_id: str, role: str, content: str) -> int:
+        logger.info("[DB] Saving message: conv_id=%s, role=%s, content_len=%d chars", conversation_id, role, len(content))
         db_path = get_db_path()
+        logger.info("[DB] Using database at: %s", db_path.resolve())
         try:
             async with aiosqlite.connect(db_path) as db:
-                await db.execute(
+                cursor = await db.execute(
                     """
                     INSERT INTO thread_messages (conversation_id, role, content)
                     VALUES (?, ?, ?);
@@ -86,9 +90,11 @@ class GptThreadRepository:
                     (conversation_id, role, content),
                 )
                 await db.commit()
-            logger.info("Message saved successfully to %s", db_path)
+                rowid = cursor.lastrowid
+            logger.info("[DB] Message committed successfully: rowid=%s, path=%s", rowid, db_path.resolve())
+            return rowid
         except aiosqlite.Error as e:
-            logger.error("Failed to save message: %s", e)
+            logger.error("[DB] Failed to save message: %s", e)
             raise
 
     async def reset_mode(self, tg_user_id: int, mode: str) -> None:

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from telegram import Update
 from telegram.constants import ParseMode
+from telegram.error import TimedOut, NetworkError
 from telegram.ext import ContextTypes
 
 logger = logging.getLogger(__name__)
@@ -65,12 +66,13 @@ async def send_photo(
                 caption=caption,
                 parse_mode=ParseMode.HTML,
                 reply_markup=reply_markup,
+                read_timeout=30,
+                write_timeout=30,
+                connect_timeout=30,
             )
+    except (TimedOut, NetworkError) as e:
+        logger.warning("Photo upload timed out (%s), falling back to text: %s", path, e)
+        await send_html_message(update, context, caption, reply_markup=reply_markup)
     except Exception:
         logger.exception("Failed to send photo: %s", path)
-        await send_html_message(
-            update,
-            context,
-            "⚠️ Failed to send photo. Please try again later.",
-            reply_markup=reply_markup,
-        )
+        await send_html_message(update, context, caption, reply_markup=reply_markup)
