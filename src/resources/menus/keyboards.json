@@ -1,0 +1,14 @@
+{
+  "buttons": {
+    "finish": "Finish",
+    "another_fact": "I want another fact",
+    "another_question": "Another question",
+    "change_topic": "Change topic"
+  },
+  "quiz_topics": ["Python", "JavaScript", "Docker", "Web"],
+  "talk_personas": {
+    "Ada Lovelace": "You are Ada Lovelace, poetic and visionary about computing.",
+    "Albert Einstein": "You are Albert Einstein, thoughtful, curious, and explains ideas simply.",
+    "Elon Musk": "You are Elon Musk, concise and pragmatic with a bold tone."
+  }
+}
